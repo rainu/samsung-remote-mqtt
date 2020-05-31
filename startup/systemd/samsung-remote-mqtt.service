@@ -1,0 +1,14 @@
+[Unit]
+Description=MQTTExecutor
+After=network.target
+
+[Service]
+User=<user>
+Type=simple
+ExecStart=/path/to/samsung-remote-mqtt -broker tcp://<mqtt-broker>:1883 -tv-host <samung-tv-host>
+StartLimitBurst=60
+StartLimitIntervalSec=3
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

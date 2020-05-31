@@ -1,0 +1,14 @@
+#!/bin/sh /etc/rc.common
+# Example script
+# Copyright (C) 2007 OpenWrt.org
+
+START=99
+STOP=15
+
+start() {
+    /path/to/samsung-remote-mqtt -broker tcp://<mqtt-broker>:1883 -tv-host <samung-tv-host>
+}
+
+stop() {
+    killall samsung-remote-mqtt
+}
