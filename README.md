@@ -1,5 +1,31 @@
 # samsung-remote-mqtt
-A mqtt bridge for samsung smart tv.
+A mqtt bridge for samsung smart tv. 
+
+# Get the Binary
+You can build it on your own (you will need [golang](https://golang.org/) installed):
+```bash
+go build -a -installsuffix cgo ./cmd/samsung-remote-mqtt/
+```
+
+Or you can download the release binaries: [here](https://github.com/rainu/samsung-remote-mqtt/releases/latest)
+
+# usage
+```bash
+./samsung-remote-mqtt -broker tcp://127.0.0.1:1883 -tv-host TV_HOST_NAME
+```
+
+## Trigger command execution
+
+To execute a command:
+
+```bash
+mosquitto_pub -t "cmnd/samsung-remote/info" -m ""
+```
+
+Read the result:
+```bash
+mosquitto_sub -t "cmnd/samsung-remote/info/result"
+```
 
 # Topics and Payload
 
