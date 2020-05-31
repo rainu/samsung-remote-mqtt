@@ -4,6 +4,7 @@ import (
 	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/rainu/samsung-remote-mqtt/internal/mqtt"
+	"github.com/rainu/samsung-remote-mqtt/internal/mqtt/hassio"
 	samsungRemoteHTTP "github.com/rainu/samsung-remote/http"
 	samsungRemoteWS "github.com/rainu/samsung-remote/ws"
 	"go.uber.org/zap"
@@ -60,6 +61,23 @@ func main() {
 
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		zap.L().Fatal("Error while connecting to mqtt broker: %s", zap.Error(token.Error()))
+	}
+
+	//if hassio is enabled -> publish the hassio mqtt-discovery configs
+	if *Config.HomeassistantEnable {
+		information, err := httpRemote.GetInformation()
+		if err != nil {
+			zap.L().Warn("Could not get device information: %s", zap.Error(err))
+		}
+
+		haClient := hassio.Client{
+			DeviceInfo:        information,
+			RemoteName:        *Config.SamsungRemoteName,
+			TopicPrefix:       *Config.TopicPrefix,
+			HassioTopicPrefix: *Config.HomeassistantTopic,
+			MqttClient:        client,
+		}
+		haClient.PublishDiscoveryConfig()
 	}
 
 	executor.Initialise(*Config.TopicPrefix, byte(*Config.SubscribeQOS), byte(*Config.PublishQOS))

@@ -13,6 +13,11 @@ import (
 	"strings"
 )
 
+const (
+	PayloadStatusRunning = "RUNNING"
+	PayloadStatusStopped = "STOPPED"
+)
+
 type Executor struct {
 	initialised  bool
 	subscribeQOS byte
@@ -33,18 +38,18 @@ func (e *Executor) Initialise(topicPrefix string, subscribeQOS, publishQOS byte)
 	e.publishQOS = publishQOS
 
 	e.topics = map[string]MQTT.MessageHandler{
-		fmt.Sprintf("%s/info", topicPrefix):          e.handleInfo,
-		fmt.Sprintf("%s/send-key", topicPrefix):      e.handleSendKey,
-		fmt.Sprintf("%s/send-text", topicPrefix):     e.handleSendText,
-		fmt.Sprintf("%s/move", topicPrefix):          e.handleMove,
-		fmt.Sprintf("%s/left-click", topicPrefix):    e.handleLeftClick,
-		fmt.Sprintf("%s/right-click", topicPrefix):   e.handleRightClick,
-		fmt.Sprintf("%s/browser", topicPrefix):       e.handleBrowser,
-		fmt.Sprintf("%s/app/start", topicPrefix):     e.handleAppStart,
-		fmt.Sprintf("%s/app/start/+", topicPrefix):   e.handleAppStartByName,
-		fmt.Sprintf("%s/app/stop", topicPrefix):      e.handleAppStop,
-		fmt.Sprintf("%s/app/status", topicPrefix):    e.handleAppStatus,
-		fmt.Sprintf("%s/app/installed", topicPrefix): e.handleAppInstalled,
+		fmt.Sprintf("%s/info", topicPrefix):          e.stateWrapper(e.handleInfo),
+		fmt.Sprintf("%s/send-key", topicPrefix):      e.stateWrapper(e.handleSendKey),
+		fmt.Sprintf("%s/send-text", topicPrefix):     e.stateWrapper(e.handleSendText),
+		fmt.Sprintf("%s/move", topicPrefix):          e.stateWrapper(e.handleMove),
+		fmt.Sprintf("%s/left-click", topicPrefix):    e.stateWrapper(e.handleLeftClick),
+		fmt.Sprintf("%s/right-click", topicPrefix):   e.stateWrapper(e.handleRightClick),
+		fmt.Sprintf("%s/browser", topicPrefix):       e.stateWrapper(e.handleBrowser),
+		fmt.Sprintf("%s/app/start", topicPrefix):     e.stateWrapper(e.handleAppStart),
+		fmt.Sprintf("%s/app/start/+", topicPrefix):   e.stateWrapper(e.handleAppStartByName),
+		fmt.Sprintf("%s/app/stop", topicPrefix):      e.stateWrapper(e.handleAppStop),
+		fmt.Sprintf("%s/app/status", topicPrefix):    e.stateWrapper(e.handleAppStatus),
+		fmt.Sprintf("%s/app/installed", topicPrefix): e.stateWrapper(e.handleAppInstalled),
 	}
 
 	for topic, handler := range e.topics {
@@ -159,6 +164,18 @@ func (e *Executor) handleAppInstalled(client MQTT.Client, message MQTT.Message) 
 			e.sendAnswer(client, message, answer, err)
 		}
 	}
+}
+
+func (e *Executor) stateWrapper(delegate MQTT.MessageHandler) MQTT.MessageHandler {
+	return func(client MQTT.Client, message MQTT.Message) {
+		e.sendStatus(client, message, []byte(PayloadStatusRunning))
+		delegate(client, message)
+		e.sendStatus(client, message, []byte(PayloadStatusStopped))
+	}
+}
+
+func (e *Executor) sendStatus(client MQTT.Client, message MQTT.Message, state []byte) {
+	client.Publish(fmt.Sprintf("%s/state", message.Topic()), e.publishQOS, false, state)
 }
 
 func (e *Executor) sendAnswer(client MQTT.Client, message MQTT.Message, answer []byte, err error) {

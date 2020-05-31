@@ -14,6 +14,11 @@ Or you can download the release binaries: [here](https://github.com/rainu/samsun
 ./samsung-remote-mqtt -broker tcp://127.0.0.1:1883 -tv-host TV_HOST_NAME
 ```
 
+Enable the Homeassitant discovery support
+```bash
+./samsung-remote-mqtt -broker tcp://127.0.0.1:1883 -tv-host TV_HOST_NAME -home-assistant
+```
+
 ## Trigger command execution
 
 To execute a command:
@@ -46,3 +51,6 @@ mosquitto_sub -t "cmnd/samsung-remote/info/result"
 
 All actions will send an answer to the corresponding result topic. The result topic is the incoming topic plus "result".
 For example: The result of **%prefix%/info** will send to **%prefix%/info/result**
+
+Before and after each action the state will publish to the state topic. The state topic is the incoming topic plus "state".
+For example: The state of **%prefix%/info** will send to **%prefix%/info/state**
