@@ -56,6 +56,7 @@ func main() {
 		handleOnConnectionLost,
 	))
 	executor.MqttClient = client
+	statusWorker.MqttClient = client
 
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		zap.L().Fatal("Error while connecting to mqtt broker: %s", zap.Error(token.Error()))
