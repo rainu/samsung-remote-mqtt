@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"github.com/rainu/samsung-remote-mqtt/internal/mqtt"
 	"go.uber.org/zap"
 )
 
@@ -19,9 +21,6 @@ type applicationConfig struct {
 	SamsungTvHost     *string
 	SamsungRemoteName *string
 	SamsungTokenPath  *string
-
-	HomeassistantEnable *bool
-	HomeassistantTopic  *string
 }
 
 var Config applicationConfig
@@ -40,9 +39,6 @@ func LoadConfig() {
 		SamsungTvHost:     flag.String("tv-host", "", "The samsung tv host address. ex: 192.168.1.123"),
 		SamsungRemoteName: flag.String("tv-remote-name", "samung-remote-mqtt", "The name of the remote. This name will displayed at the TV. (optional)"),
 		SamsungTokenPath:  flag.String("tv-remote-token-file", "./samsung-remote.token", "The path to the file were the token will be saved for reuse. (optional)"),
-
-		HomeassistantEnable: flag.Bool("home-assistant", false, "Enable home assistant support (optional)"),
-		HomeassistantTopic:  flag.String("ha-discovery-prefix", "homeassistant/", "The mqtt topic prefix for homeassistant's discovery (optional)"),
 	}
 	flag.Parse()
 
@@ -79,6 +75,11 @@ func (c *applicationConfig) GetMQTTOpts(
 	if *c.ClientId != "" {
 		opts.SetClientID(*c.ClientId)
 	}
+
+	opts.WillEnabled = true
+	opts.WillQos = byte(*c.PublishQOS)
+	opts.WillPayload = []byte(mqtt.StatusOffline)
+	opts.WillTopic = fmt.Sprintf("%s/status", *c.TopicPrefix)
 
 	opts.SetOnConnectHandler(onConn)
 	opts.SetConnectionLostHandler(onLost)

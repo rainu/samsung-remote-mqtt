@@ -54,6 +54,16 @@ func (e *Executor) Initialise(topicPrefix string, subscribeQOS, publishQOS byte)
 	e.initialised = true
 }
 
+func (e *Executor) IsInitialised() bool {
+	return e.initialised
+}
+
+func (e *Executor) ReInitialise() {
+	for topic, handler := range e.topics {
+		e.MqttClient.Subscribe(topic, e.subscribeQOS, handler)
+	}
+}
+
 func (e *Executor) handleInfo(client MQTT.Client, message MQTT.Message) {
 	info, err := e.SamsungRemoteHttp.GetInformationWithContext(e.ctx)
 	e.sendAnswer(client, message, []byte(info), err)

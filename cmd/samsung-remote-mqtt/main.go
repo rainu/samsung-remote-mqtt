@@ -15,6 +15,7 @@ import (
 )
 
 var executor mqtt.Executor
+var statusWorker mqtt.StatusWorker
 var wsRemote samsungRemoteWS.SamsungRemote
 var httpRemote samsungRemoteHTTP.SamsungRemote
 var remoteConnectionLostHandler samsungRemoteWS.ConnectionLostHandler
@@ -61,6 +62,7 @@ func main() {
 	}
 
 	executor.Initialise(*Config.TopicPrefix, byte(*Config.SubscribeQOS), byte(*Config.PublishQOS))
+	statusWorker.Initialise(*Config.TopicPrefix)
 
 	// wait for interrupt
 	<-signals
@@ -69,7 +71,12 @@ func main() {
 }
 
 var handleOnConnection = func(client MQTT.Client) {
-	//do nothing at the moment
+	if !executor.IsInitialised() {
+		return
+	}
+
+	zap.L().Info("Reinitialise...")
+	executor.ReInitialise()
 }
 
 var handleOnConnectionLost = func(client MQTT.Client, err error) {
@@ -107,7 +114,7 @@ func shutdown(client MQTT.Client) {
 	type closable interface {
 		Close() error
 	}
-	closeables := []closable{wsRemote, httpRemote, &executor}
+	closeables := []closable{wsRemote, httpRemote, &executor, &statusWorker}
 
 	//most operating systems wait a maximum of 30 seconds
 
@@ -125,6 +132,6 @@ func shutdown(client MQTT.Client) {
 	}
 	wg.Wait()
 
-	//we have to disconnect at last because one closeable unsubscripe all topics
+	//we have to disconnect at last because one closeable unsubscribe all topics
 	client.Disconnect(10 * 1000) //wait 10sek at most
 }
