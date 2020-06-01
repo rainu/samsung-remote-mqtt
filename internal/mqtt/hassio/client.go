@@ -94,8 +94,11 @@ func (c *Client) PublishDiscoveryConfig() {
 	payload = c.generatePayloadForTvStatus()
 	c.MqttClient.Publish(targetTopic, byte(0), false, payload)
 
+	for topic, payload := range c.generatePayloadsForTvWakeUp() {
+		c.MqttClient.Publish(topic, byte(0), false, payload)
+	}
 	for keyName, description := range SamsungRemoteKeys {
-		for topic, payload := range c.generatePayloadForSendKey(keyName, description) {
+		for topic, payload := range c.generatePayloadsForSendKey(keyName, description) {
 			c.MqttClient.Publish(topic, byte(0), false, payload)
 		}
 	}
@@ -141,7 +144,78 @@ func (c *Client) generatePayloadForTvStatus() []byte {
 	return payload
 }
 
-func (c *Client) generatePayloadForSendKey(key, description string) map[string][]byte {
+func (c *Client) generatePayloadsForTvWakeUp() map[string][]byte {
+	payloads := map[string][]byte{}
+	var conf interface{}
+
+	conf = triggerConfig{
+		generalConfig: generalConfig{
+			Name:                "TV WakeUp",
+			Icon:                "mdi:sleep-off",
+			UniqueId:            fmt.Sprintf("%s_tv_wake_up", c.deviceId()),
+			Device:              c.buildDevice(),
+			AvailabilityTopic:   fmt.Sprintf("%s/tv/status", c.TopicPrefix),
+			PayloadAvailable:    internal.StatusOffline, //wakeUp is available if the tv is offline
+			PayloadNotAvailable: internal.StatusOnline,  //waleUp is unavailable if the tv is online
+		},
+		CommandTopic: fmt.Sprintf("%s/wake-up", c.TopicPrefix),
+		StateTopic:   fmt.Sprintf("%s/wake-up/state", c.TopicPrefix),
+		StateRunning: mqtt.PayloadStatusRunning,
+		StateStopped: mqtt.PayloadStatusStopped,
+	}
+
+	payload, err := json.Marshal(conf)
+	if err != nil {
+		//the "marshalling" is relatively safe - it should never appear at runtime
+		panic(err)
+	}
+	topic := fmt.Sprintf("%sswitch/%s/wake_up/config", c.HassioTopicPrefix, c.deviceId())
+	payloads[topic] = payload
+
+	conf = sensorConfig{
+		generalConfig: generalConfig{
+			Name:                fmt.Sprintf("TV WakeUp - State"),
+			UniqueId:            fmt.Sprintf("%s_wake_up_state", c.deviceId()),
+			Device:              c.buildDevice(),
+			AvailabilityTopic:   fmt.Sprintf("%s/tv/status", c.TopicPrefix),
+			PayloadAvailable:    internal.StatusOnline,
+			PayloadNotAvailable: internal.StatusOffline,
+		},
+		StateTopic: fmt.Sprintf("%s/wake-up/state", c.TopicPrefix),
+	}
+
+	payload, err = json.Marshal(conf)
+	if err != nil {
+		//the "marshalling" is relatively safe - it should never appear at runtime
+		panic(err)
+	}
+	topic = fmt.Sprintf("%ssensor/%s_wake_up/state/config", c.HassioTopicPrefix, c.deviceId())
+	payloads[topic] = payload
+
+	conf = sensorConfig{
+		generalConfig: generalConfig{
+			Name:                fmt.Sprintf("TV WakeUp - Result"),
+			UniqueId:            fmt.Sprintf("%s_wake_up_result", c.deviceId()),
+			Device:              c.buildDevice(),
+			AvailabilityTopic:   fmt.Sprintf("%s/tv/status", c.TopicPrefix),
+			PayloadAvailable:    internal.StatusOnline,
+			PayloadNotAvailable: internal.StatusOffline,
+		},
+		StateTopic: fmt.Sprintf("%s/wake-up/result", c.TopicPrefix),
+	}
+
+	payload, err = json.Marshal(conf)
+	if err != nil {
+		//the "marshalling" is relatively safe - it should never appear at runtime
+		panic(err)
+	}
+	topic = fmt.Sprintf("%ssensor/%s_wake_up/result/config", c.HassioTopicPrefix, c.deviceId())
+	payloads[topic] = payload
+
+	return payloads
+}
+
+func (c *Client) generatePayloadsForSendKey(key, description string) map[string][]byte {
 	payloads := map[string][]byte{}
 	var conf interface{}
 
@@ -187,7 +261,7 @@ func (c *Client) generatePayloadForSendKey(key, description string) map[string][
 		//the "marshalling" is relatively safe - it should never appear at runtime
 		panic(err)
 	}
-	topic = fmt.Sprintf("%ssensor/%s_%s/result/config", c.HassioTopicPrefix, c.deviceId(), key)
+	topic = fmt.Sprintf("%ssensor/%s_%s/state/config", c.HassioTopicPrefix, c.deviceId(), key)
 	payloads[topic] = payload
 
 	conf = sensorConfig{
@@ -207,7 +281,7 @@ func (c *Client) generatePayloadForSendKey(key, description string) map[string][
 		//the "marshalling" is relatively safe - it should never appear at runtime
 		panic(err)
 	}
-	topic = fmt.Sprintf("%ssensor/%s_%s/state/config", c.TopicPrefix, c.deviceId(), key)
+	topic = fmt.Sprintf("%ssensor/%s_%s/result/config", c.HassioTopicPrefix, c.deviceId(), key)
 	payloads[topic] = payload
 
 	return payloads

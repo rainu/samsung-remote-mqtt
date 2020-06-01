@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"github.com/linde12/gowol"
 	samsungRemoteHTTP "github.com/rainu/samsung-remote/http"
 	samsungRemoteWS "github.com/rainu/samsung-remote/ws"
 	"go.uber.org/zap"
@@ -28,6 +29,7 @@ type Executor struct {
 	ctxCancel context.CancelFunc
 
 	MqttClient        MQTT.Client
+	SamsungTvMac      string
 	SamsungRemoteWS   samsungRemoteWS.SamsungRemote
 	SamsungRemoteHttp samsungRemoteHTTP.SamsungRemote
 }
@@ -38,6 +40,7 @@ func (e *Executor) Initialise(topicPrefix string, subscribeQOS, publishQOS byte)
 	e.publishQOS = publishQOS
 
 	e.topics = map[string]MQTT.MessageHandler{
+		fmt.Sprintf("%s/wake-up", topicPrefix):       e.stateWrapper(e.handleWakeUp),
 		fmt.Sprintf("%s/info", topicPrefix):          e.stateWrapper(e.handleInfo),
 		fmt.Sprintf("%s/send-key", topicPrefix):      e.stateWrapper(e.handleSendKey),
 		fmt.Sprintf("%s/send-text", topicPrefix):     e.stateWrapper(e.handleSendText),
@@ -67,6 +70,26 @@ func (e *Executor) ReInitialise() {
 	for topic, handler := range e.topics {
 		e.MqttClient.Subscribe(topic, e.subscribeQOS, handler)
 	}
+}
+
+func (e *Executor) handleWakeUp(client MQTT.Client, message MQTT.Message) {
+	if e.SamsungTvMac == "" {
+		e.sendAnswer(client, message, nil, errors.New("TV Mac-Address is not given"))
+		return
+	}
+
+	packet, err := gowol.NewMagicPacket(e.SamsungTvMac)
+	if err != nil {
+		e.sendAnswer(client, message, nil, fmt.Errorf("failed to create magic packet: %w", err))
+		return
+	}
+
+	err = packet.Send("255.255.255.255")
+	if err != nil {
+		e.sendAnswer(client, message, nil, fmt.Errorf("failed to send magic packet: %w", err))
+		return
+	}
+	e.sendAnswer(client, message, nil, nil)
 }
 
 func (e *Executor) handleInfo(client MQTT.Client, message MQTT.Message) {

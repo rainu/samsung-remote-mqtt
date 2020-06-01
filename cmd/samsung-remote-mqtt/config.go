@@ -18,6 +18,7 @@ type applicationConfig struct {
 	TopicPrefix  *string
 
 	SamsungTvHost     *string
+	SamsungTvHostMac  *string
 	SamsungRemoteName *string
 	SamsungTokenPath  *string
 
@@ -38,6 +39,7 @@ func LoadConfig() {
 		TopicPrefix:  flag.String("topic-prefix", "cmnd/samsung-remote", "The mqtt topic to listen for incoming commands (default cmnd/samsung-remote)"),
 
 		SamsungTvHost:     flag.String("tv-host", "", "The samsung tv host address. ex: 192.168.1.123"),
+		SamsungTvHostMac:  flag.String("tv-host-mac", "", "The samsung tv host MAC address. ex: 01:02:03:04:05:BB"),
 		SamsungRemoteName: flag.String("tv-remote-name", "samung-remote-mqtt", "The name of the remote. This name will displayed at the TV. (optional)"),
 		SamsungTokenPath:  flag.String("tv-remote-token-file", "./samsung-remote.token", "The path to the file were the token will be saved for reuse. (optional)"),
 

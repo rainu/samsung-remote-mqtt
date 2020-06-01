@@ -11,7 +11,7 @@ Or you can download the release binaries: [here](https://github.com/rainu/samsun
 
 # usage
 ```bash
-./samsung-remote-mqtt -broker tcp://127.0.0.1:1883 -tv-host TV_HOST_NAME
+./samsung-remote-mqtt -broker tcp://127.0.0.1:1883 -tv-host TV_HOST_NAME -tv-host-mac TV_HOST_MAC_ADDRESS
 ```
 
 Enable the Homeassitant discovery support
@@ -37,6 +37,7 @@ mosquitto_sub -t "cmnd/samsung-remote/info/result"
 |Topic|Payload|Description|
 |-----|-------|-----------|
 |%prefix%/info|-|Get information about the tv.|
+|%prefix%/wake-up|-|Wakes up the Tv - it only works if the MAC-Address was configured!|
 |%prefix%/send-key|KEY_VOLUP|Send the key to samsung remote|
 |%prefix%/send-text|SomeText|Send the given text to samsung remote|
 |%prefix%/move|X Y|Go with the cursor to position samsung remote|

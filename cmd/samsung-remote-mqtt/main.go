@@ -28,6 +28,8 @@ func main() {
 	defer zap.L().Sync()
 
 	LoadConfig()
+	executor.SamsungTvMac = *Config.SamsungTvHostMac
+
 	//reacting to signals (interrupt)
 	defer close(signals)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
