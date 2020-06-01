@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"github.com/rainu/samsung-remote-mqtt/internal"
 	"github.com/rainu/samsung-remote-mqtt/internal/mqtt"
 	"go.uber.org/zap"
 	"strings"
@@ -86,7 +87,11 @@ func (c *Client) PublishDiscoveryConfig() {
 	}
 
 	targetTopic := fmt.Sprintf("%ssensor/%s_status/config", c.HassioTopicPrefix, c.deviceId())
-	payload := c.generatePayloadForStatus()
+	payload := c.generatePayloadForApplicationStatus()
+	c.MqttClient.Publish(targetTopic, byte(0), false, payload)
+
+	targetTopic = fmt.Sprintf("%ssensor/%s_tv_status/config", c.HassioTopicPrefix, c.deviceId())
+	payload = c.generatePayloadForTvStatus()
 	c.MqttClient.Publish(targetTopic, byte(0), false, payload)
 
 	for keyName, description := range SamsungRemoteKeys {
@@ -96,13 +101,33 @@ func (c *Client) PublishDiscoveryConfig() {
 	}
 }
 
-func (c *Client) generatePayloadForStatus() []byte {
+func (c *Client) generatePayloadForApplicationStatus() []byte {
 	conf := sensorConfig{
 		generalConfig: generalConfig{
 			Name:                "Status",
-			PayloadAvailable:    mqtt.StatusOnline,
-			PayloadNotAvailable: mqtt.StatusOffline,
+			PayloadAvailable:    internal.StatusOnline,
+			PayloadNotAvailable: internal.StatusOffline,
 			UniqueId:            fmt.Sprintf("%s_status", c.deviceId()),
+			Device:              c.buildDevice(),
+		},
+		StateTopic: fmt.Sprintf("%s/status", c.TopicPrefix),
+	}
+
+	payload, err := json.Marshal(conf)
+	if err != nil {
+		//the "marshalling" is relatively safe - it should never appear at runtime
+		panic(err)
+	}
+	return payload
+}
+
+func (c *Client) generatePayloadForTvStatus() []byte {
+	conf := sensorConfig{
+		generalConfig: generalConfig{
+			Name:                "TV Status",
+			PayloadAvailable:    internal.StatusOnline,
+			PayloadNotAvailable: internal.StatusOffline,
+			UniqueId:            fmt.Sprintf("%s_tv_status", c.deviceId()),
 			Device:              c.buildDevice(),
 		},
 		StateTopic: fmt.Sprintf("%s/status", c.TopicPrefix),
@@ -126,9 +151,9 @@ func (c *Client) generatePayloadForSendKey(key, description string) map[string][
 			Icon:                "mdi:remote",
 			UniqueId:            fmt.Sprintf("%s_%s", c.deviceId(), key),
 			Device:              c.buildDevice(),
-			AvailabilityTopic:   fmt.Sprintf("%s/status", c.TopicPrefix),
-			PayloadAvailable:    mqtt.StatusOnline,
-			PayloadNotAvailable: mqtt.StatusOffline,
+			AvailabilityTopic:   fmt.Sprintf("%s/tv/status", c.TopicPrefix),
+			PayloadAvailable:    internal.StatusOnline,
+			PayloadNotAvailable: internal.StatusOffline,
 		},
 		CommandTopic: fmt.Sprintf("%s/send-key", c.TopicPrefix),
 		PayloadStart: key,
@@ -150,9 +175,9 @@ func (c *Client) generatePayloadForSendKey(key, description string) map[string][
 			Name:                fmt.Sprintf("%s - State", description),
 			UniqueId:            fmt.Sprintf("%s_%s_state", c.deviceId(), key),
 			Device:              c.buildDevice(),
-			AvailabilityTopic:   fmt.Sprintf("%s/status", c.TopicPrefix),
-			PayloadAvailable:    mqtt.StatusOnline,
-			PayloadNotAvailable: mqtt.StatusOffline,
+			AvailabilityTopic:   fmt.Sprintf("%s/tv/status", c.TopicPrefix),
+			PayloadAvailable:    internal.StatusOnline,
+			PayloadNotAvailable: internal.StatusOffline,
 		},
 		StateTopic: fmt.Sprintf("%s/send-key/state", c.TopicPrefix),
 	}
@@ -170,9 +195,9 @@ func (c *Client) generatePayloadForSendKey(key, description string) map[string][
 			Name:                fmt.Sprintf("%s - Result", description),
 			UniqueId:            fmt.Sprintf("%s_%s_result", c.deviceId(), key),
 			Device:              c.buildDevice(),
-			AvailabilityTopic:   fmt.Sprintf("%s/status", c.TopicPrefix),
-			PayloadAvailable:    mqtt.StatusOnline,
-			PayloadNotAvailable: mqtt.StatusOffline,
+			AvailabilityTopic:   fmt.Sprintf("%s/tv/status", c.TopicPrefix),
+			PayloadAvailable:    internal.StatusOnline,
+			PayloadNotAvailable: internal.StatusOffline,
 		},
 		StateTopic: fmt.Sprintf("%s/send-key/result", c.TopicPrefix),
 	}

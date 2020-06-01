@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/rainu/samsung-remote-mqtt/internal/mqtt"
+	"github.com/rainu/samsung-remote-mqtt/internal"
 	"go.uber.org/zap"
 )
 
@@ -82,7 +82,7 @@ func (c *applicationConfig) GetMQTTOpts(
 
 	opts.WillEnabled = true
 	opts.WillQos = byte(*c.PublishQOS)
-	opts.WillPayload = []byte(mqtt.StatusOffline)
+	opts.WillPayload = []byte(internal.StatusOffline)
 	opts.WillTopic = fmt.Sprintf("%s/status", *c.TopicPrefix)
 
 	opts.SetOnConnectHandler(onConn)
