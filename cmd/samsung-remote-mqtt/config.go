@@ -31,8 +31,8 @@ var Config applicationConfig
 func LoadConfig() {
 	Config = applicationConfig{
 		Broker:       flag.String("broker", "", "The broker URI. ex: tcp://127.0.0.1:1883"),
-		SubscribeQOS: flag.Int("sub-qos", 0, "The Quality of Service for subscription 0,1,2 (default 0)"),
-		PublishQOS:   flag.Int("pub-qos", 0, "The Quality of Service for publishing 0,1,2 (default 0)"),
+		SubscribeQOS: flag.Int("sub-qos", 1, "The Quality of Service for subscription 0,1,2 (default 1)"),
+		PublishQOS:   flag.Int("pub-qos", 1, "The Quality of Service for publishing 0,1,2 (default 1)"),
 		Username:     flag.String("user", "", "The User (optional)"),
 		Password:     flag.String("password", "", "The password (optional)"),
 		ClientId:     flag.String("client-id", "samsung-remote", "The ClientID (default samsung-remote)"),
@@ -83,6 +83,7 @@ func (c *applicationConfig) GetMQTTOpts(
 	}
 
 	opts.WillEnabled = true
+	opts.WillRetained = true
 	opts.WillQos = byte(*c.PublishQOS)
 	opts.WillPayload = []byte(internal.StatusOffline)
 	opts.WillTopic = fmt.Sprintf("%s/status", *c.TopicPrefix)

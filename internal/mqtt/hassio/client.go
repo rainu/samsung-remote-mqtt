@@ -88,18 +88,18 @@ func (c *Client) PublishDiscoveryConfig() {
 
 	targetTopic := fmt.Sprintf("%ssensor/%s_status/config", c.HassioTopicPrefix, c.deviceId())
 	payload := c.generatePayloadForApplicationStatus()
-	c.MqttClient.Publish(targetTopic, byte(0), false, payload)
+	c.MqttClient.Publish(targetTopic, byte(1), true, payload)
 
 	targetTopic = fmt.Sprintf("%ssensor/%s_tv_status/config", c.HassioTopicPrefix, c.deviceId())
 	payload = c.generatePayloadForTvStatus()
-	c.MqttClient.Publish(targetTopic, byte(0), false, payload)
+	c.MqttClient.Publish(targetTopic, byte(1), true, payload)
 
 	for topic, payload := range c.generatePayloadsForTvWakeUp() {
-		c.MqttClient.Publish(topic, byte(0), false, payload)
+		c.MqttClient.Publish(topic, byte(1), true, payload)
 	}
 	for keyName, description := range SamsungRemoteKeys {
 		for topic, payload := range c.generatePayloadsForSendKey(keyName, description) {
-			c.MqttClient.Publish(topic, byte(0), false, payload)
+			c.MqttClient.Publish(topic, byte(1), true, payload)
 		}
 	}
 }

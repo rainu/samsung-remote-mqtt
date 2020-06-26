@@ -47,16 +47,8 @@ func (s *StatusWorker) runApplicationStatus(statusTopic string, ctx context.Cont
 	//first one
 	s.sendStatus(statusTopic, true)
 
-	ticker := time.Tick(30 * time.Second)
-	for {
-		//wait until next tick or shutdown
-		select {
-		case <-ticker:
-			s.sendStatus(statusTopic, true)
-		case <-ctx.Done():
-			return
-		}
-	}
+	//wait until shutdown
+	<-ctx.Done()
 }
 
 func (s *StatusWorker) runTvStatus(statusTopic, tvHost string, ctx context.Context) {
@@ -104,7 +96,7 @@ func (s *StatusWorker) sendStatus(statusTopic string, status bool) MQTT.Token {
 		payload = StatusOffline
 	}
 
-	return s.MqttClient.Publish(statusTopic, byte(0), false, payload)
+	return s.MqttClient.Publish(statusTopic, byte(1), true, payload)
 }
 
 func isPortOpen(tvHost string) bool {

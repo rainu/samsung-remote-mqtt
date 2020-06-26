@@ -198,7 +198,7 @@ func (e *Executor) stateWrapper(delegate MQTT.MessageHandler) MQTT.MessageHandle
 }
 
 func (e *Executor) sendStatus(client MQTT.Client, message MQTT.Message, state []byte) {
-	client.Publish(fmt.Sprintf("%s/state", message.Topic()), e.publishQOS, false, state)
+	client.Publish(fmt.Sprintf("%s/state", message.Topic()), e.publishQOS, true, state)
 }
 
 func (e *Executor) sendAnswer(client MQTT.Client, message MQTT.Message, answer []byte, err error) {
